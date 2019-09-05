@@ -1,5 +1,9 @@
 #include <Arduino.h>
+
+#include <PacketEncoder.h>
+
 #include <PixelLoader.h>
+
 
 #define PRT(x) Serial.println(x);
 #define PRTVAL(des,val) Serial.print(des);Serial.println(val);
@@ -7,52 +11,51 @@
 
 #include "FMEM.h"
 
+#define SERIAL_SPEED 250000
+#define RX_SERIALBUF_MAXSIZE 20
+
+uint8_t rxCmdBuf[RX_SERIALBUF_MAXSIZE];
+
+struct serialPacket_t {
+	uint8_t *packet;
+	uint16_t packetMaxSize;
+	uint16_t rxBufPos;
+};
+
+serialPacket_t cmdBuf;
 
 
-uint8_t charTest[] = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has s!";
-uint8_t charRead[256];
+// return	0 packet ready
+//			1 no packet being received
+//      2 packet being received
+//			100 framing error
+int8_t loadPacket(struct serialPacket_t *pkg) {
+	uint8_t ch;
+	int8_t stat = 1;		//no packet being received
+	while (Serial.available()) {
+    stat = 2;
+		ch = Serial.read();
+		if (ch == START_CHAR) {
+     
+      pkg->rxBufPos = 0;
 
+		}else if (ch == END_CHAR) {
+			if (pkg->packet[0] == START_CHAR) stat = 0; else stat = 100;
+			pkg->packet[pkg->rxBufPos] = ch;
+			pkg->rxBufPos = 0;
+			break;
+		}
 
-uint8_t Strip1[] = {255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    255,0,0,
-                    };
+		pkg->packet[pkg->rxBufPos] = ch;
+		pkg->rxBufPos++;
+		if (pkg->rxBufPos == pkg->packetMaxSize) pkg->rxBufPos = 0;
 
-uint8_t Strip2[] = {0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    0,255,0,
-                    };
+		
+	}
 
-uint8_t Strip3[] = {0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    0,0,255,
-                    };
+	return stat;
+}
 
-frameHeader_t f1;
-frameHeader_t f2;
-
-uint8_t tmp[256];
 
 void setup() {
   // put your setup code here, to run once:
@@ -61,79 +64,58 @@ void setup() {
   PRT("Starting up");
   
   PL_init(0,9);
-
-  f1.duration = 5000;
-  f1.index = 0;
-  f1.ledNumFlags = 10;
-
-  f2.duration = 5000;
-  f2.index = 0;
-  f2.ledNumFlags = PL_LOOP_FLAG + 10;
-
-  // loading the colors
-
-  //  FMEM_eraseSector4K(0);
-  //  FMEM_writePage(0,(uint8_t*)&f1,8);
-  //  FMEM_writePage(8,Strip1,sizeof(Strip1));
-
-  //  FMEM_writePage(8+sizeof(Strip1),(uint8_t*)&f1,8);
-  //  FMEM_writePage(16+sizeof(Strip1),Strip3,sizeof(Strip3));
-
-  //  FMEM_writePage(16+2*sizeof(Strip1),(uint8_t*)&f2,8);
-  //  FMEM_writePage(24+2*sizeof(Strip2),Strip2,sizeof(Strip2));
-
-
-
-  FMEM_read(0,tmp,256);
-  for (int i=0; i<256;i++){
-    Serial.print(tmp[i]);
-    Serial.print(" ");
-  }
   
-
- //  while(1);
   PL_setStartAddress(0);
   PL_start();
+
+  cmdBuf.packet = rxCmdBuf;
+  cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
+  cmdBuf.rxBufPos = 0;
+  
 }
 
 uint8_t inputbuf[515];
-int cnt =0;
+int8_t stat;
+
+
+void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
+  uint16_t dataLen;
+  uint8_t stat = decodePacket(inbuf, outbuf, &dataLen);
+  Serial.print("Len: ");
+  Serial.println(dataLen);
+  Serial.print("BUF:");
+  Serial.println(outbuf[0]);
+  Serial.println(stat);
+  if (stat == 0){
+
+    switch (outbuf[0])
+    {
+    case 0:  //attention packet
+      Serial.println("RDY");
+      break;
+    
+    case 1: //continuous data
+      Serial.println("NXT");
+      break;
+
+    case 2: //last packet
+      Serial.println("END");
+
+    default:
+      break;
+    }
+  }
+
+}
+
 
 void loop() {
 
   PL_tick();
 
-  // put your main code here, to run repeatedly:
-  //PRTVAL("status:",FMEM_getStatus());
-  //delay(5000);
+  stat = loadPacket(&cmdBuf);
 
-  // PRTVAL("Erasing:",FMEM_eraseSector4K(0));
-  // PRTVAL("Status writing:",FMEM_writePage(256,charTest,256)); 
-
-  // PRTVAL("Reading",FMEM_read(256,charRead,256));
-
-  //Serial.write(charRead,256);
-
-  //while (1);
-  
-  // if (Serial.available()){
-  //   inputbuf[cnt++] = Serial.read();
-  //   if (cnt == 515){
-  //      Serial.write(inputbuf,cnt);
-  //      cnt =0;
-  //   }
-  // }  
-
-
-
-  // pixels.clear();
-  // for (uint16_t i=0; i<m_pixNumber; i++){
-
-  //   pixels.setPixelColor(i, pixels.Color(0,150,150));
-
-  //   pixels.show();
-
-  //   delay(1000);
-  // }
-
+  if (stat == 0){
+      PDL_process(cmdBuf.packet, inputbuf);  
+  } 
 }
