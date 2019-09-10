@@ -17,7 +17,7 @@ void FMEM_enableWrite();
 /* Erases the 4k sector that includes the target address */
 int FMEM_eraseSector4K(uint32_t addr);
 
-int FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len);
+uint32_t FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len);
 
 int FMEM_read(uint32_t addr, uint8_t* data, uint32_t len);
 
