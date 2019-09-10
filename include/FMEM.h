@@ -21,4 +21,8 @@ int FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len);
 
 int FMEM_read(uint32_t addr, uint8_t* data, uint32_t len);
 
+int FMEM_managedStart(uint32_t addr);
+
+int FMEM_managedWrite(uint8_t* data, uint32_t len);
+
 #endif

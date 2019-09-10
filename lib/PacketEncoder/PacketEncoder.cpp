@@ -1,5 +1,36 @@
 #include "PacketEncoder.h"
 
+// return	0 packet ready
+//			1 no packet being received
+//      2 packet being received
+//			100 framing error
+int8_t loadPacket(struct serialPacket_t *pkg) {
+	uint8_t ch;
+	int8_t stat = 1;		//no packet being received
+	while (Serial.available()) {
+    stat = 2;
+		ch = Serial.read();
+		if (ch == START_CHAR) {
+     
+      pkg->rxBufPos = 0;
+
+		}else if (ch == END_CHAR) {
+			if (pkg->packet[0] == START_CHAR) stat = 0; else stat = 100;
+			pkg->packet[pkg->rxBufPos] = ch;
+			pkg->rxBufPos = 0;
+			break;
+		}
+
+		pkg->packet[pkg->rxBufPos] = ch;
+		pkg->rxBufPos++;
+		if (pkg->rxBufPos == pkg->packetMaxSize) pkg->rxBufPos = 0;
+
+		
+	}
+
+	return stat;
+}
+
 
 int8_t encodePacket(uint8_t* bufIn, uint8_t* bufOut, int lenIn) {
 	int len = 0;

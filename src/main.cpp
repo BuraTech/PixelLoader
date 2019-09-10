@@ -16,46 +16,7 @@
 
 uint8_t rxCmdBuf[RX_SERIALBUF_MAXSIZE];
 
-struct serialPacket_t {
-	uint8_t *packet;
-	uint16_t packetMaxSize;
-	uint16_t rxBufPos;
-};
-
 serialPacket_t cmdBuf;
-
-
-// return	0 packet ready
-//			1 no packet being received
-//      2 packet being received
-//			100 framing error
-int8_t loadPacket(struct serialPacket_t *pkg) {
-	uint8_t ch;
-	int8_t stat = 1;		//no packet being received
-	while (Serial.available()) {
-    stat = 2;
-		ch = Serial.read();
-		if (ch == START_CHAR) {
-     
-      pkg->rxBufPos = 0;
-
-		}else if (ch == END_CHAR) {
-			if (pkg->packet[0] == START_CHAR) stat = 0; else stat = 100;
-			pkg->packet[pkg->rxBufPos] = ch;
-			pkg->rxBufPos = 0;
-			break;
-		}
-
-		pkg->packet[pkg->rxBufPos] = ch;
-		pkg->rxBufPos++;
-		if (pkg->rxBufPos == pkg->packetMaxSize) pkg->rxBufPos = 0;
-
-		
-	}
-
-	return stat;
-}
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -90,15 +51,26 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
 
     switch (outbuf[0])
     {
-    case 0:  //attention packet
+    case 0:  
+      //attention packet
+      //we need to stop the updating of the LEDs;
+      PL_stop();
+      FMEM_managedStart(0);
+      //send replay
       Serial.println("RDY");
       break;
     
     case 1: //continuous data
+      FMEM_managedWrite(outbuf,dataLen);
+      //send replay
       Serial.println("NXT");
       break;
 
     case 2: //last packet
+      //we can start the PL aganin
+      PL_setStartAddress(0);
+      PL_start();
+      //send replay
       Serial.println("END");
 
     default:
