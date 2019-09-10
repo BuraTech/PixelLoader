@@ -2,6 +2,7 @@
 
 int m_pin;
 uint8_t m_initalized = 0;
+uint32_t m_nexAddress =0;
 #define CS_START digitalWrite(m_pin, LOW);
 #define CS_STOP  digitalWrite(m_pin, HIGH);
 
@@ -94,7 +95,7 @@ int FMEM_eraseSector4K(uint32_t addr){
 /* writes elements up to 256 or until the end of the page */
 /* function returns the number of bytes writen or -1 in case of an error*/
 
-int FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len){
+uint32_t FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len){
     int stat;
     if ((addr & 0xFF) + len > 256) len = 256 - (addr & 0xFF);
 
@@ -143,10 +144,31 @@ int FMEM_read(uint32_t addr, uint8_t* data, uint32_t len){
 
 int FMEM_managedStart(uint32_t addr)
 {
-
+    m_nexAddress = addr;
 }
 
 int FMEM_managedWrite(uint8_t* data, uint32_t len)
 {
+    int16_t stat = 0;
+    do {
+        //check if we are at the beginning of a sector
+        if (m_nexAddress & 0xFFF == 0){
+            Serial.println("Erasing sector");
+            FMEM_eraseSector4K(m_nexAddress);
+        }
+        stat = FMEM_writePage(m_nexAddress,data,len);
+        if (stat > 0){
+            m_nexAddress +=stat;
+            data += stat;
+            len -= stat;
 
+            Serial.print("Written bytes:");
+            Serial.println(stat);
+            Serial.print("Next Address:");
+            Serial.println(m_nexAddress);
+            Serial.print("Remaining len:");
+            Serial.println(len);
+        }
+
+    } while (stat > 0);
 }
