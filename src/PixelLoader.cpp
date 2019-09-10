@@ -3,6 +3,9 @@
 
 #include "PixelLoader.h"
 
+#define PL_ENDFRAME_FLAG (1<<15)
+#define PL_LOOP_FLAG     (1<<14)
+
 struct frame_t {
     frameHeader_t frame;
     uint8_t colArray[PL_MAX_PIXELS*3];

@@ -7,8 +7,7 @@
 
 #define PL_MAX_PIXELS 16
 #define PL_PIN         6
-#define PL_ENDFRAME_FLAG (1<<15)
-#define PL_LOOP_FLAG     (1<<14)
+
 
 struct frameHeader_t {
     uint16_t ledNumFlags; //3 Flags are in the top 3 bits the rest is for the len

@@ -90,7 +90,7 @@ int8_t decodePacket(uint8_t* bufIn, uint8_t* bufOut, uint16_t* len_p) {
 
 			} while ((len > 0));
 
-			if (len != 0) stat = -3;	
+			if ((len != 0) || (chr != END_CHAR)) stat = -3;	
 		}
 	}
 	else {

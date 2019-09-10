@@ -1,3 +1,19 @@
+/* For testing over serial 
+ Beginning of Transfer command 117 0 2 0 126 for start of transfer
+ DATA transfer command: 117 0 2+pixelLen 1 <pixels> 126 for data after start
+ END transfer command:  117 0 2 2 126 
+
+pixel data 
+10 reds, 0 index, 5sec: 
+encoded:117 0 40 1 0xA 0 0 0 0x88 0x13 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 126
+
+10 blues 0 index 5 sec, loop: 
+encoded: 117 0 40 1 0xA 0x40 0 0 0x88 0x13 0 0 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 0 0 255 126
+ 
+ */
+
+
+
 #include <Arduino.h>
 
 #include <PacketEncoder.h>
@@ -26,11 +42,10 @@ void setup() {
   Serial.begin(250000);
   //while (1);
   PRT("Starting up");
-  delay(5000);
   PL_init(0,9);
   
   PL_setStartAddress(0);
-  PL_start();
+  //PL_start();
 
   cmdBuf.packet = rxCmdBuf;
   cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
@@ -44,6 +59,9 @@ void setup() {
 void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
   uint16_t dataLen;
   uint8_t stat = decodePacket(inbuf, outbuf, &dataLen);
+
+  frameHeader_t* h = (frameHeader_t*)&outbuf[1];
+
   Serial.print("Len: ");
   Serial.println(dataLen);
   Serial.print("BUF:");
@@ -58,12 +76,19 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
       //we need to stop the updating of the LEDs;
       PL_stop();
       FMEM_managedStart(0);
+      cmdBuf.packet = inputbuf;
+      cmdBuf.packetMaxSize = 517;
       //send replay
       Serial.println("RDY");
       break;
     
     case 1: //continuous data
-      FMEM_managedWrite(outbuf,dataLen);
+      
+      // Serial.print("Pixel Num");
+      // Serial.println(h->ledNumFlags);
+      // Serial.print("Duration");
+      // Serial.println(h->duration);
+      FMEM_managedWrite(&outbuf[1],dataLen-1);
       //send replay
       Serial.println("NXT");
       break;
@@ -72,9 +97,11 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
       //we can start the PL aganin
       PL_setStartAddress(0);
       PL_start();
+      cmdBuf.packet = rxCmdBuf;
+      cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
       //send replay
       Serial.println("END");
-
+      break;
     default:
       break;
     }
