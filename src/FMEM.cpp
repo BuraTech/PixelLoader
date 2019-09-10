@@ -48,16 +48,20 @@ uint8_t FMEM_getStatus(){
 }
 
 /* waits untilt the flash is 
-done or untils timeput is done */
+done or untils timeout is done 
+return 0 - everything OK
+return 1 - timeout
+*/
+
 uint8_t FMEM_waitUntilDone(uint16_t ms_timeout){
     CS_START;
     int done = 0;
     int stat = 0;
     SPI.transfer(FMEM_CMD_READ_STATUS);
     while ((ms_timeout-->0) && (!done)) {
-        stat = SPI.transfer(0xFF);
-        done = !(stat & 0x1);
         delay(1);
+        stat = SPI.transfer(0xFF);
+        done = !(stat & 0x1);        
     }
     CS_STOP;
     return !done;
@@ -92,16 +96,12 @@ int FMEM_eraseSector4K(uint32_t addr){
 
 }
 
-/* writes elements up to 256 or until the end of the page */
-/* function returns the number of bytes writen or -1 in case of an error*/
-
 uint32_t FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len){
     int stat;
     if ((addr & 0xFF) + len > 256) len = 256 - (addr & 0xFF);
 
-    if (FMEM_waitUntilDone(1000)==0){
+    if (FMEM_waitUntilDone(1000)==0){      
         FMEM_enableWrite();
-        
         CS_START;
         SPI.transfer(FMEM_CMD_PAGE_PROGRAM);
         SPI.transfer(addr>>16);
@@ -113,10 +113,10 @@ uint32_t FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len){
         }
         CS_STOP;
         stat = FMEM_waitUntilDone(2);
-        if (!stat) len = -1;
+        if (stat) len = -1;
 
     } else {
-        len = -1;
+        len = -2;
     }
     return len;
 
@@ -145,30 +145,27 @@ int FMEM_read(uint32_t addr, uint8_t* data, uint32_t len){
 int FMEM_managedStart(uint32_t addr)
 {
     m_nexAddress = addr;
+   
+    return 0;
 }
 
 int FMEM_managedWrite(uint8_t* data, uint32_t len)
 {
-    int16_t stat = 0;
-    do {
+    int16_t stat = 1;
+    while ((len > 0) && (stat>0)) {
         //check if we are at the beginning of a sector
-        if (m_nexAddress & 0xFFF == 0){
-            Serial.println("Erasing sector");
+        if ((m_nexAddress & 0xFFF) == 0){
             FMEM_eraseSector4K(m_nexAddress);
         }
+
         stat = FMEM_writePage(m_nexAddress,data,len);
         if (stat > 0){
             m_nexAddress +=stat;
             data += stat;
             len -= stat;
+       }
+    }
 
-            Serial.print("Written bytes:");
-            Serial.println(stat);
-            Serial.print("Next Address:");
-            Serial.println(m_nexAddress);
-            Serial.print("Remaining len:");
-            Serial.println(len);
-        }
-
-    } while (stat > 0);
+    if (stat >0) stat = 0;
+    return stat;
 }

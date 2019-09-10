@@ -18,12 +18,15 @@ uint8_t rxCmdBuf[RX_SERIALBUF_MAXSIZE];
 
 serialPacket_t cmdBuf;
 
+uint8_t inputbuf[517]={"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing softw!"};
+int8_t stat;
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(250000);
-  
+  //while (1);
   PRT("Starting up");
-  
+  delay(5000);
   PL_init(0,9);
   
   PL_setStartAddress(0);
@@ -32,11 +35,29 @@ void setup() {
   cmdBuf.packet = rxCmdBuf;
   cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
   cmdBuf.rxBufPos = 0;
+
+  //testing FMEM 
+  FMEM_managedStart(0);
+  int stat;
+  // stat = FMEM_managedWrite(inputbuf,517);
+  stat = FMEM_managedWrite(inputbuf,256);
+  stat = FMEM_managedWrite(inputbuf,256);
+  Serial.println("Writing done");
+
+  //read things back
+  memset(inputbuf,0,512);
+  Serial.println("Reading back");
+  FMEM_read(0,inputbuf,517);
+  for (uint16_t i=0;i<517;i++){
+    Serial.write(inputbuf[i]);
+  }
+
+  while (1);
+
   
 }
 
-uint8_t inputbuf[515];
-int8_t stat;
+
 
 
 void PDL_process(uint8_t *inbuf, uint8_t *outbuf){

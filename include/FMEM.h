@@ -17,6 +17,8 @@ void FMEM_enableWrite();
 /* Erases the 4k sector that includes the target address */
 int FMEM_eraseSector4K(uint32_t addr);
 
+/* writes elements up to 256 or until the end of the page */
+/* function returns the number of bytes writen or -1 in case of an error*/
 uint32_t FMEM_writePage(uint32_t addr, uint8_t* data, uint32_t len);
 
 int FMEM_read(uint32_t addr, uint8_t* data, uint32_t len);
