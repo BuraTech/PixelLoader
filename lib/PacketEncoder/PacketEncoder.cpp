@@ -71,25 +71,26 @@ int8_t decodePacket(uint8_t* bufIn, uint8_t* bufOut, uint16_t* len_p) {
 		if (len == 0) 
 			stat = -2;
 		else {
-			*len_p = len - 1;
+			*len_p = 0;
 			do {
 				chr = *bufIn++;
 				len--;
-
+				
 				//check for end first otehrwise we cannot transfer END char
 				if (chr == END_CHAR) {
 					break;
 				}
-
 				// check for escape chars
 				if (chr == ESCAPE_CHAR) {
 					chr = (*bufIn++) ^ XOR_CHAR;
 					len--;
 				}
 				*bufOut++ = chr;
+				(*len_p)++;
+
 			} while ((len > 0));
 
-			if (len != 0) stat = -3;
+			if (len != 0) stat = -3;	
 		}
 	}
 	else {
@@ -97,4 +98,3 @@ int8_t decodePacket(uint8_t* bufIn, uint8_t* bufOut, uint16_t* len_p) {
 	}
 	return stat;
 }
-

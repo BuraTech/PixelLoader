@@ -36,25 +36,6 @@ void setup() {
   cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
   cmdBuf.rxBufPos = 0;
 
-  //testing FMEM 
-  FMEM_managedStart(0);
-  int stat;
-  // stat = FMEM_managedWrite(inputbuf,517);
-  stat = FMEM_managedWrite(inputbuf,256);
-  stat = FMEM_managedWrite(inputbuf,256);
-  Serial.println("Writing done");
-
-  //read things back
-  memset(inputbuf,0,512);
-  Serial.println("Reading back");
-  FMEM_read(0,inputbuf,517);
-  for (uint16_t i=0;i<517;i++){
-    Serial.write(inputbuf[i]);
-  }
-
-  while (1);
-
-  
 }
 
 
