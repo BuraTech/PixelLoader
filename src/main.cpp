@@ -34,7 +34,7 @@ uint8_t rxCmdBuf[RX_SERIALBUF_MAXSIZE];
 
 serialPacket_t cmdBuf;
 
-uint8_t inputbuf[517]={"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing softw!"};
+uint8_t inputbuf[517]={};
 int8_t stat;
 
 void setup() {
@@ -45,8 +45,8 @@ void setup() {
   PL_init(0,9);
   
   PL_setStartAddress(0);
-  //PL_start();
-
+  PL_start();
+  
   cmdBuf.packet = rxCmdBuf;
   cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
   cmdBuf.rxBufPos = 0;
@@ -60,7 +60,7 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
   uint16_t dataLen;
   uint8_t stat = decodePacket(inbuf, outbuf, &dataLen);
 
-  frameHeader_t* h = (frameHeader_t*)&outbuf[1];
+  //frameHeader_t* h = (frameHeader_t*)&outbuf[1];
 
   Serial.print("Len: ");
   Serial.println(dataLen);
@@ -79,7 +79,7 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
       cmdBuf.packet = inputbuf;
       cmdBuf.packetMaxSize = 517;
       //send replay
-      Serial.println("RDY");
+      Serial.println(">RDY");
       break;
     
     case 1: //continuous data
@@ -90,7 +90,7 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
       // Serial.println(h->duration);
       FMEM_managedWrite(&outbuf[1],dataLen-1);
       //send replay
-      Serial.println("NXT");
+      Serial.println(">NXT");
       break;
 
     case 2: //last packet
@@ -100,7 +100,7 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
       cmdBuf.packet = rxCmdBuf;
       cmdBuf.packetMaxSize = RX_SERIALBUF_MAXSIZE;
       //send replay
-      Serial.println("END");
+      Serial.println(">END");
       break;
     default:
       break;
@@ -111,8 +111,10 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
 
 
 void loop() {
-
-  PL_tick();
+  //delay of 5s on startup so we dont overload the PC when running with a large LEDstrip
+  if (millis()>5000){
+    PL_tick();
+  }
 
   stat = loadPacket(&cmdBuf);
 
