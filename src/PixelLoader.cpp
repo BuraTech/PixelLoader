@@ -75,19 +75,19 @@ void PL_getNextFrame(struct frame_t*f){
     if (f->frame.ledNumFlags & PL_LOOP_FLAG) m_nextAddress = m_startAddress;
 
     //prepare for the next frame
-    Serial.print("Next ADR:");
-    Serial.println(m_nextAddress);
+    //Serial.print("Next ADR:");
+    //Serial.println(m_nextAddress);
    
 }
 
 void PL_tick(){
     if (((millis() - m_lastTime) > m_frame.frame.duration) && m_running ){
         //we need to load the new frame
-        Serial.println("Next Frame");
+        //Serial.println("Next Frame");
         m_lastTime = millis();
         PL_getNextFrame(&m_frame);
         PL_applyFrame(&m_frame);
-        Serial.println("Frame Applied");
+        //Serial.println("Frame Applied");
 
     }
 }

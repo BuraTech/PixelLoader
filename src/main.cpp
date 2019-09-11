@@ -40,8 +40,8 @@ int8_t stat;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(250000);
-  //while (1);
-  PRT("Starting up");
+
+  //PRT("Starting up");
   PL_init(0,9);
   
   PL_setStartAddress(0);
@@ -62,11 +62,11 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
 
   //frameHeader_t* h = (frameHeader_t*)&outbuf[1];
 
-  Serial.print("Len: ");
-  Serial.println(dataLen);
-  Serial.print("BUF:");
-  Serial.println(outbuf[0]);
-  Serial.println(stat);
+  // Serial.print("Len: ");
+  // Serial.println(dataLen);
+  // Serial.print("BUF:");
+  // Serial.println(outbuf[0]);
+  // Serial.println(stat);
   if (stat == 0){
 
     switch (outbuf[0])
@@ -112,7 +112,13 @@ void PDL_process(uint8_t *inbuf, uint8_t *outbuf){
 
 void loop() {
   //delay of 5s on startup so we dont overload the PC when running with a large LEDstrip
+  static char startup = 0;
+
   if (millis()>5000){
+    startup = 1;
+  }
+
+  if (startup){
     PL_tick();
   }
 
