@@ -5,6 +5,7 @@
 
 #define PL_ENDFRAME_FLAG (1<<15)
 #define PL_LOOP_FLAG     (1<<14)
+#define MAX_PIX_NUMBER      60
 
 struct frame_t {
     frameHeader_t frame;
@@ -65,22 +66,27 @@ void PL_getNextFrame(struct frame_t*f){
     int pixNum;
     FMEM_read(m_nextAddress, (uint8_t*)f, 8);
     pixNum =  f->frame.ledNumFlags & 0x1FF;
-    FMEM_read(m_nextAddress + 8, f->colArray, pixNum * 3);
-    
-    m_nextAddress += pixNum * 3 + 8;
 
-    //check for the end of file 
-    if (f->frame.ledNumFlags & PL_ENDFRAME_FLAG) m_running = 0;
-    // check for loop reset
-    if (f->frame.ledNumFlags & PL_LOOP_FLAG) m_nextAddress = m_startAddress;
+    if (pixNum < MAX_PIX_NUMBER) {
+        FMEM_read(m_nextAddress + 8, f->colArray, pixNum * 3);
+        
+        m_nextAddress += pixNum * 3 + 8;
 
-    //prepare for the next frame
-    //Serial.print("Next ADR:");
-    //Serial.println(m_nextAddress);
-   
+        //check for the end of file 
+        if (f->frame.ledNumFlags & PL_ENDFRAME_FLAG) m_running = 0;
+        // check for loop reset
+        if (f->frame.ledNumFlags & PL_LOOP_FLAG) m_nextAddress = m_startAddress;
+
+        //prepare for the next frame
+        //Serial.print("Next ADR:");
+        //Serial.println(m_nextAddress);
+    } else {
+        m_running = 0;
+    }
 }
 
 void PL_tick(){
+    
     if (((millis() - m_lastTime) > m_frame.frame.duration) && m_running ){
         //we need to load the new frame
         //Serial.println("Next Frame");
